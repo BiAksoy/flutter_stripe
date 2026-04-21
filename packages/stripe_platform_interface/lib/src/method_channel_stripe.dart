@@ -15,6 +15,7 @@ import 'package:stripe_platform_interface/src/result_parser.dart';
 
 import 'models/app_info.dart';
 import 'models/card_details.dart';
+import 'models/collect_bank_account_result.dart';
 import 'models/errors.dart';
 import 'models/payment_intents.dart';
 import 'models/payment_methods.dart';
@@ -569,7 +570,7 @@ class MethodChannelStripe extends StripePlatform {
   }
 
   @override
-  Future<PaymentIntent> collectBankAccount({
+  Future<CollectBankAccountResult> collectBankAccount({
     required bool isPaymentIntent,
     required String clientSecret,
     required CollectBankAccountParams params,
@@ -583,13 +584,14 @@ class MethodChannelStripe extends StripePlatform {
 
     _financialConnectionsEventHandler = params.onEvent;
 
-    return ResultParser<PaymentIntent>(
-      parseJson: (json) => PaymentIntent.fromJson(json),
-    ).parse(result: result!, successResultKey: 'paymentIntent');
+    return _parseCollectBankAccountResult(
+      result!,
+      isPaymentIntent: isPaymentIntent,
+    );
   }
 
   @override
-  Future<PaymentIntent> verifyPaymentIntentWithMicrodeposits({
+  Future<CollectBankAccountResult> verifyPaymentIntentWithMicrodeposits({
     required bool isPaymentIntent,
     required String clientSecret,
     required VerifyMicroDepositsParams params,
@@ -601,9 +603,26 @@ class MethodChannelStripe extends StripePlatform {
           'clientSecret': clientSecret,
         });
 
-    return ResultParser<PaymentIntent>(
-      parseJson: (json) => PaymentIntent.fromJson(json),
-    ).parse(result: result!, successResultKey: 'paymentIntent');
+    return _parseCollectBankAccountResult(
+      result!,
+      isPaymentIntent: isPaymentIntent,
+    );
+  }
+
+  CollectBankAccountResult _parseCollectBankAccountResult(
+    Map<String, dynamic> result, {
+    required bool isPaymentIntent,
+  }) {
+    if (isPaymentIntent) {
+      final paymentIntent = ResultParser<PaymentIntent>(
+        parseJson: (json) => PaymentIntent.fromJson(json),
+      ).parse(result: result, successResultKey: 'paymentIntent');
+      return CollectBankAccountResult.paymentIntent(paymentIntent);
+    }
+    final setupIntent = ResultParser<SetupIntent>(
+      parseJson: (json) => SetupIntent.fromJson(json),
+    ).parse(result: result, successResultKey: 'setupIntent');
+    return CollectBankAccountResult.setupIntent(setupIntent);
   }
 
   @override
