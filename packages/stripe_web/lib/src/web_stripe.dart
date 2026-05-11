@@ -765,6 +765,11 @@ class WebStripe extends StripePlatform {
   Future<List<String>> pollAndClearPendingStripeConnectUrls() {
     throw WebUnsupportedError.method('pollAndClearPendingStripeConnectUrls');
   }
+
+  @override
+  void setConfirmHandler(ConfirmHandler? handler) {
+    // EmbeddedPaymentElement is not supported on web; Stripe.js handles confirmation directly.
+  }
 }
 
 class WebUnsupportedError extends Error implements UnsupportedError {
